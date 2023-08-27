@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 
 public class Pagamento {
@@ -60,7 +61,7 @@ public class Pagamento {
         this.cardapio.adicionarItem("combo2", "1 Café e 1 Sanduíche", 7.50d, false, false);
     }
 
-    //Método verificador do método de pagamento
+    //Método verificador da forma de pagamento
     public boolean validarMetodoDePagamento(String formaDePagamento) {
         if (formaDePagamento.toLowerCase().contains(this.formaDePagamentoCredito) || formaDePagamento.toLowerCase().contains(this.formaDePagamentoDebito) || formaDePagamento.toLowerCase().contains(this.formaDePagamentoDinheiro)) {
             return true;
@@ -75,6 +76,26 @@ public class Pagamento {
         }
         return false;
     }
+    //Método verificador do item extra sem principal
+    public boolean validarExtra(Itens itemIterador, ArrayList itens){
+            for(int i1 = 0;i1 < itens.size();i1++){
+                if(itemIterador.getCodigo().contains("chantily")){
+                    if(!itens.contains("cafe")){
+                        System.out.println("Item cafe não encontrado. Pedido inválido.");
+                        return false;
+                    }
+                    return true;
+                }
+                if(itemIterador.getCodigo().contains("queijo")){
+                    if(!itens.contains("sanduiche")){
+                        System.out.println("Item sanduiche não encontrado. Pedido inválido.");
+                        return false;
+                    }
+                    return true;
+                }
+            }
+        return false;
+    }
 
     public String calcularValorDaCompra(String formaDePagamento, String[] pedido) {
         autoPreencher();
@@ -84,6 +105,9 @@ public class Pagamento {
             String[] separador = pedido[i].split(",");
             itens.add(separador[0]);
             quantidade.add(Integer.parseInt(separador[1]));
+            if(quantidade.get(i)<1){
+                return "Quantidade inválida para o item: "+separador[0];
+            }
         }
         Pedido pedido1 = new Pedido(itens, quantidade);
         this.pedido = pedido1;
@@ -106,12 +130,25 @@ public class Pagamento {
                         Itens verificador = new Itens(itens.get(i));
                         if (verificador.getCodigo().equalsIgnoreCase(itemIterador.getCodigo())) {
                             System.out.println("Item " + itemIterador.getCodigo() + " existe.");
-                            resultado+=itemIterador.getValor() * quantidade.get(i);
+                            if (itemIterador.isExtra()) {
+                                if (validarExtra(itemIterador, itens)) {
+                                    resultado += itemIterador.getValor() * quantidade.get(i);
+                                } else {
+                                    return "Item principal não encontrado!";
+                                }
+                            }
+                            if (!itemIterador.isExtra() && itemIterador.isPrincipal()){
+                                resultado += itemIterador.getValor() * quantidade.get(i);
+                            }else if(!itemIterador.isExtra() && !itemIterador.isPrincipal()){
+                                return "Combo não pode ser pedido sem o principal";
+                            }
                         }
                     }
                 }
             }
         }
-        return this.pedido+"Valor total: "+resultado;
+
+        return this.pedido + "Valor total: " + resultado;
     }
+
 }
