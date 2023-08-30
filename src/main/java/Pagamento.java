@@ -1,38 +1,20 @@
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 
 public class Pagamento {
     private Cardapio cardapio = new Cardapio();
-    private String formaDePagamentoCredito = "credito";
-    private String formaDePagamentoDinheiro = "dinheiro";
-    private String formaDePagamentoDebito = "debito";
     private Pedido pedido = new Pedido();
+    private boolean existePrincipal = false;
 
-    public String getFormaDePagamentoCredito() {
-        return formaDePagamentoCredito;
+    //Getters e Setters
+
+    public boolean isExistePrincipal() {
+        return existePrincipal;
     }
 
-    public void setFormaDePagamentoCredito(String formaDePagamentoCredito) {
-        this.formaDePagamentoCredito = formaDePagamentoCredito;
+    public void setExistePrincipal(boolean existePrincipal) {
+        this.existePrincipal = existePrincipal;
     }
-
-    public String getFormaDePagamentoDinheiro() {
-        return formaDePagamentoDinheiro;
-    }
-
-    public void setFormaDePagamentoDinheiro(String formaDePagamentoDinheiro) {
-        this.formaDePagamentoDinheiro = formaDePagamentoDinheiro;
-    }
-
-    public String getFormaDePagamentoDebito() {
-        return formaDePagamentoDebito;
-    }
-
-    public void setFormaDePagamentoDebito(String formaDePagamentoDebito) {
-        this.formaDePagamentoDebito = formaDePagamentoDebito;
-    }
-
     public Cardapio getCardapio() {
         return cardapio;
     }
@@ -63,32 +45,27 @@ public class Pagamento {
 
     //Método verificador da forma de pagamento
     public boolean validarMetodoDePagamento(String formaDePagamento) {
-        if (formaDePagamento.toLowerCase().contains(this.formaDePagamentoCredito) || formaDePagamento.toLowerCase().contains(this.formaDePagamentoDebito) || formaDePagamento.toLowerCase().contains(this.formaDePagamentoDinheiro)) {
-            return true;
-        }
-        return false;
+        return formaDePagamento.toLowerCase().contains("credito") || formaDePagamento.toLowerCase().contains("debito") || formaDePagamento.toLowerCase().contains("dinheiro");
     }
 
     //Método verificador de carrinho vazio
     public boolean validarCarrinho(ArrayList<String> itens) {
         if (itens.isEmpty()) {
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
     //Método verificador do item extra sem principal
     public boolean validarExtra(Itens itemIterador, ArrayList itens){
-            for(int i1 = 0;i1 < itens.size();i1++){
+            for(int i = 0;i < itens.size();i++){
                 if(itemIterador.getCodigo().contains("chantily")){
                     if(!itens.contains("cafe")){
-                        System.out.println("Item cafe não encontrado. Pedido inválido.");
                         return false;
                     }
                     return true;
                 }
                 if(itemIterador.getCodigo().contains("queijo")){
                     if(!itens.contains("sanduiche")){
-                        System.out.println("Item sanduiche não encontrado. Pedido inválido.");
                         return false;
                     }
                     return true;
@@ -96,11 +73,36 @@ public class Pagamento {
             }
         return false;
     }
-
+    //Método que valida se o pedido contém um item principal
+    public boolean validaPrincipal(ArrayList<String> itens){
+        Iterator cardapioI = this.cardapio.getCardapio().iterator();
+        while(cardapioI.hasNext()){
+            Itens itemIterado =  (Itens) cardapioI.next();
+            for(int i = 0; i<this.pedido.getItens().size(); i++){
+                Itens itemVerificador = new Itens(itens.get(i));
+                if(itemIterado.getCodigo().equals(itemVerificador.getCodigo())){
+                    if(itemIterado.isPrincipal()){
+                        this.existePrincipal = true;
+                    }
+                }
+            }
+        }
+        return this.existePrincipal;
+    }
+    //Método que aplica o Desconto/Taxa
+    public Double aplicaDescTax(String formaDePagamento,Double resultado){
+        if(formaDePagamento.equalsIgnoreCase("dinheiro")){
+            resultado=resultado*0.95d;
+        }else if(formaDePagamento.equalsIgnoreCase("credito")){
+            resultado=resultado*1.03d;
+        }
+        return resultado;
+    }
     public String calcularValorDaCompra(String formaDePagamento, String[] pedido) {
         autoPreencher();
         ArrayList<String> itens = new ArrayList<>();
         ArrayList<Integer> quantidade = new ArrayList<>();
+        Double resultado = 0d;
         for (int i = 0; i < pedido.length; i++) {
             String[] separador = pedido[i].split(",");
             itens.add(separador[0]);
@@ -109,16 +111,16 @@ public class Pagamento {
                 return "Quantidade inválida para o item: "+separador[0];
             }
         }
-        Pedido pedido1 = new Pedido(itens, quantidade);
-        this.pedido = pedido1;
-        Double resultado = 0d;
+        /*Salvando o pedido*/
+        this.pedido = new Pedido(itens, quantidade);
         //Validando método de pagamento
         if (!validarMetodoDePagamento(formaDePagamento)) {
-            System.out.println("Forma de pagamento não aceita");
+            return "Método de pagamento não aceita. Escolher: Credito, Debito ou Dinheiro. (Não aceitamos PIX)";
         } else {
+            System.out.println("Método de pagamento: "+formaDePagamento);
             //Validando se não forem pedidos itens, apresentar mensagem "Não há itens no carrinho de compra!"
-            if (validarCarrinho(itens)) {
-                System.out.println("Não há itens no carrinho de compra.");
+            if (!validarCarrinho(itens)) {
+                return "Não há itens no carrinho de compras.";
             } else {
                 System.out.println("Há itens, vamos verificar se são válidos.");
                 //Utilizarei um iterador para checar se os itens do pedido batem com algum item do cardapio
@@ -134,21 +136,26 @@ public class Pagamento {
                                 if (validarExtra(itemIterador, itens)) {
                                     resultado += itemIterador.getValor() * quantidade.get(i);
                                 } else {
-                                    return "Item principal não encontrado!";
+                                    return itemIterador.getCodigo()+" sem o item principal, refazer pedido.";
                                 }
                             }
                             if (!itemIterador.isExtra() && itemIterador.isPrincipal()){
                                 resultado += itemIterador.getValor() * quantidade.get(i);
-                            }else if(!itemIterador.isExtra() && !itemIterador.isPrincipal()){
-                                return "Combo não pode ser pedido sem o principal";
+                            }
+                            if(!itemIterador.isExtra() && !itemIterador.isPrincipal()){
+                                if(!validaPrincipal(itens)){
+                                    return "Combo não é principal. Favor, refazer pedido com um item principal.";
+                                }else{
+                                    resultado += itemIterador.getValor() * quantidade.get(i);
+                                }
                             }
                         }
                     }
                 }
             }
         }
-
-        return this.pedido + "Valor total: " + resultado;
+        resultado =aplicaDescTax(formaDePagamento, resultado);
+        return this.pedido + "Valor total: " + String.format("%.2f", resultado);
     }
 
 }

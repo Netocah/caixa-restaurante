@@ -11,11 +11,11 @@ public class Pedido {
         this.quantidade = quantidade;
     }
     //Getters e Setters
-    public ArrayList<String> getItem() {
+    public ArrayList<String> getItens() {
         return itens;
     }
-    public void setItem(ArrayList<String> item) {
-        this.itens = item;
+    public void setItens(ArrayList<String> itens) {
+        this.itens = itens;
     }
     public ArrayList<Integer> getQuantidade() {
         return quantidade;
