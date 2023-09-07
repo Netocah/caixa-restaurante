@@ -92,9 +92,9 @@ public class Pagamento {
     //Método que aplica o Desconto/Taxa
     public Double aplicaDescTax(String formaDePagamento,Double resultado){
         if(formaDePagamento.equalsIgnoreCase("dinheiro")){
-            resultado=resultado*0.95d;
+            resultado*=0.95d;
         }else if(formaDePagamento.equalsIgnoreCase("credito")){
-            resultado=resultado*1.03d;
+            resultado*=1.03d;
         }
         return resultado;
     }
